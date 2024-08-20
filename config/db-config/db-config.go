@@ -40,6 +40,6 @@ func InitDB() {
 	}
 	log.SetOutput(logFile)
 	//Initialize Entity
-	debugDb()
 	initializeEntity()
+	debugDb()
 }

@@ -241,7 +241,7 @@ func CreateProductWithProcedure(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
-		"message": "Created Product Successfully",
+		"message": "Get Product Successfully",
 	})
 }
 
@@ -285,7 +285,7 @@ func ReplenishProduct(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
-		"message": "Get Products Successfully",
+		"message": "Replenish products successfully",
 		"data":    result,
 	})
 }
