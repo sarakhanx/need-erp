@@ -87,6 +87,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 }
 
 func GetHundredProducts(c *fiber.Ctx) error {
+	conn := dbconfig.DB
 	Page := c.Query("page")
 	page, err := strconv.Atoi(Page)
 	if err != nil {
@@ -99,8 +100,22 @@ func GetHundredProducts(c *fiber.Ctx) error {
 	limit := 100
 	offset := (page - 1) * limit
 
-	conn := dbconfig.DB
-	var product []productmodels.Product
+	var TotalRows int
+	err = conn.QueryRow(`select count(*) from products;`).Scan(&TotalRows)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Can not count all page, Database server error",
+			"data":    err.Error(),
+		})
+	}
+	TotalPage := (TotalRows + limit - 1) / limit
+	if page > TotalPage {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Page not found",
+		})
+	}
 
 	rows, err := conn.Query(productquery.GetAllProducts, limit, offset)
 	if err != nil {
@@ -110,9 +125,9 @@ func GetHundredProducts(c *fiber.Ctx) error {
 			"data":    err.Error(),
 		})
 	}
-
 	defer rows.Close()
 
+	product := []productmodels.Product{}
 	for rows.Next() {
 
 		var p productmodels.Product
@@ -137,10 +152,12 @@ func GetHundredProducts(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":  "success",
-		"message": "Get Products Successfully",
-		"data":    product,
-		"page":    page,
+		"status":     "success",
+		"message":    "Get Products Successfully",
+		"data":       product,
+		"page":       page,
+		"totalPages": TotalPage,
+		"totalRows":  TotalRows,
 	})
 }
 
@@ -211,8 +228,7 @@ func CreateProductWithProcedure(c *fiber.Ctx) error {
 		})
 	}
 
-	if ProductFormData.ProductName == "" ||
-		ProductFormData.Cost == 0 ||
+	if ProductFormData.Cost == 0 ||
 		ProductFormData.Price == 0 ||
 		ProductFormData.Category == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -241,11 +257,12 @@ func CreateProductWithProcedure(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
-		"message": "Get Product Successfully",
+		"message": "Created Product Successfully",
 	})
 }
 
 func ReplenishProduct(c *fiber.Ctx) error {
+	//EXPLAIN - เอาไว้ทำการเพิ่มสินค้าเข้ามาในระบบ แบบ click เลือกที่ตรง Card Product เลย
 	conn := dbconfig.DB
 	var product_data productmodels.Product
 	err := c.BodyParser(&product_data)
@@ -312,8 +329,7 @@ func CreateProduct(c *fiber.Ctx) error {
 		})
 	}
 	//EXPLAIN - เช็คว่ามีค่าว่างหรือไม่
-	if ProductFormData.ProductName == "" ||
-		ProductFormData.Cost == 0 ||
+	if ProductFormData.Cost == 0 ||
 		ProductFormData.Price == 0 ||
 		ProductFormData.Category == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

@@ -14,5 +14,9 @@ SECRET_KEYS = secretkeys
 |date | title | developer | period | score(full :10)|NOTE|
 |---|---|---|---|---|---|
 |20aug24|purchasing's and warehouse's routers & controller development. Docker File Changed COMMIT: `:construction:pur and wh controller` |amp | 3week|3:10|work too long than expected
-
+|21aug24|...purchasing order and sale_order service...|...amp...|...time...|...score...|...note...|
+| | | | | | | | | | | |
+| | | | | | | | | | | |
+| | | | | | | | | | | |
+|---|---|---|---|---|---|---|---|---|---|---|
 ---

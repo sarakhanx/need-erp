@@ -14,11 +14,13 @@ import (
 
 func main() {
 	app := fiber.New()
+
 	dbconfig.InitDB()
 
 	log.Println("Server is starting...")
 	defer dbconfig.DB.Close()
 	//Routers
+
 	userrouters.UserRouter(app)
 	departmentrouters.DepartmentRoutes(app)
 	branchrouters.BranchRouter(app)

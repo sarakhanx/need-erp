@@ -9,4 +9,8 @@ func PurchasingRouters(app *fiber.App) {
 	api := app.Group("/api/purchasing")
 
 	api.Get("/purchase-debug", purchasing.Purchase)
+	api.Get("/getpo/:id", purchasing.GetPurchasingOrderByID)
+	api.Post("/createpurchaseorder", purchasing.CreatePurchaseOrder)
+	api.Get("/purchaseorder", purchasing.GetDocumentPagination)
+	api.Delete("/purchaseorder", purchasing.DeletePoDoc)
 }
