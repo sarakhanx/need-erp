@@ -107,10 +107,6 @@ func CreatePurchaseOrder(c *fiber.Ctx) error {
 			"data":    err.Error(),
 		})
 	}
-	// fmt.Printf("Parsed FormData: %+v\n\n", FormData)
-	// for i, product := range FormData.Products {
-	// 	fmt.Printf("Product array is here %d: %+v\n\n", i, product)
-	// }
 
 	if err := purchasevalidation.ValidatePurchaseOrderInput(FormData); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -181,6 +177,17 @@ func CreatePurchaseOrder(c *fiber.Ctx) error {
 				})
 			}
 		}
+	}
+	DocumentLog := FormData.DocumentLog
+	_, err = tx.Exec(purchasequery.InsertDocLog, DocumentLog.DocAction, FormData.DocId, FormData.UserID, DocumentLog.DocQty, FormData.DepartmentID)
+	if err != nil {
+		tx.Rollback()
+		log.Println("Error while insert document log: ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status": "error",
+			"error":  "Internal server error while insert data into document log",
+			"data":   err.Error(),
+		})
 	}
 
 	if err := tx.Commit(); err != nil {

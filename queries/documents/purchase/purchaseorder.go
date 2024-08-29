@@ -145,4 +145,9 @@ limit $1 offset $2;
 	InsertProdToPO = `CALL insert_product_in_po($1, $2, $3, $4, $5, $6, $7, $8, $9, $10 , $11, $12)`
 
 	DeletePoDocument = `CALL delete_document($1);`
+
+	InsertDocLog = `
+insert into documentlog (doc_action , doc_id , user_id , qty, department_id , date , created_at , updated_at)
+values ($1, $2 , $3 , $4 , $5 , now() , now() , now())
+	`
 )

@@ -10,7 +10,7 @@ type User struct {
 	Mobile    string       `json:"mobile"`
 	LastLogin sql.NullTime `json:"last_login"`
 	Email     string       `json:"email"`
-	Role      string       `json:"role"`
+	Roles     []string     `json:"roles"` // เพิ่ม Roles
 	Position  string       `json:"position"`
 	CreatedAt sql.NullTime `json:"created_at"`
 	UpdatedAt sql.NullTime `json:"updated_at"`

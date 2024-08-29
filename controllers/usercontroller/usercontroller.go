@@ -1,6 +1,7 @@
 package usercontroller
 
 import (
+	"encoding/json"
 	"log"
 	"strings"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	// "github.com/need/go-backend/config/db-config"
 	dbconfig "github.com/need/go-backend/config/db-config"
+	// "github.com/need/go-backend/middlewares/auth"
 	"github.com/need/go-backend/middlewares/uservalidator"
 	"github.com/need/go-backend/models/usermodels"
 	"github.com/need/go-backend/queries/userquery"
@@ -16,6 +18,14 @@ import (
 )
 
 func DebugUser(c *fiber.Ctx) error {
+	// role := c.Get("role")
+	// // isAuth, err := auth.IsMod(role)
+	// if err != nil {
+	// 	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Error checking role"})
+	// }
+	// if !isAuth {
+	// 	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	// }
 
 	return c.SendString("Hello World")
 }
@@ -25,7 +35,9 @@ func SignupUser(c *fiber.Ctx) error {
 	var signupData usermodels.User
 
 	if err := c.BodyParser(&signupData); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error occurred when parsing body": err})
+		return c.Status(500).JSON(fiber.Map{"status": "error",
+			"message": "Error occurred when parsing body",
+			"data":    err.Error()})
 	}
 	// EXPLAIN -  Validate data
 	if strings.TrimSpace(signupData.Name) == "" ||
@@ -33,7 +45,7 @@ func SignupUser(c *fiber.Ctx) error {
 		strings.TrimSpace(signupData.Password) == "" ||
 		strings.TrimSpace(signupData.Mobile) == "" ||
 		strings.TrimSpace(signupData.Email) == "" ||
-		strings.TrimSpace(signupData.Role) == "" ||
+		len(signupData.Roles) == 0 ||
 		strings.TrimSpace(signupData.Position) == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No Blank Spaces Allowed"})
 	}
@@ -41,7 +53,8 @@ func SignupUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Email"})
 	}
 	if len(signupData.Password) < 6 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password too short"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error",
+			"message": "Password must contain at least 6 characters"})
 	}
 
 	exist, err := uservalidator.IsExistUser(signupData.Email)
@@ -55,6 +68,12 @@ func SignupUser(c *fiber.Ctx) error {
 	}
 	log.Println("User registration successful for email:", signupData.Email)
 	//NOTE : เริ่มการบีนทึก
+	rolesJSON, err := json.Marshal(signupData.Roles)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error",
+			"message": "Error occurred when marshalling roles",
+			"data":    err.Error()})
+	}
 	hashedPassword, err := bcrypt.HashedPassword(signupData.Password)
 	if err != nil {
 		log.Println("Error hashing password:", err)
@@ -62,7 +81,7 @@ func SignupUser(c *fiber.Ctx) error {
 	}
 
 	query := userquery.InsertNewUser
-	err = conn.QueryRow(query, signupData.Name, signupData.LastName, signupData.Mobile, signupData.Email, hashedPassword, signupData.Role, signupData.Position).Scan(&signupData.ID)
+	err = conn.QueryRow(query, signupData.Name, signupData.LastName, signupData.Mobile, signupData.Email, hashedPassword, string(rolesJSON), signupData.Position).Scan(&signupData.ID)
 	if err != nil {
 		log.Println("Error inserting new user to database :", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error inserting new user" + err.Error()})
@@ -72,6 +91,7 @@ func SignupUser(c *fiber.Ctx) error {
 
 func SigninUser(c *fiber.Ctx) error {
 	conn := dbconfig.DB
+	var rolesJSON string
 
 	var signinData usermodels.User
 	if err := c.BodyParser(&signinData); err != nil {
@@ -82,18 +102,28 @@ func SigninUser(c *fiber.Ctx) error {
 	var UserSession usermodels.User
 	query := userquery.SigninUser
 	if err := conn.QueryRow(query, signinData.Email).Scan(&UserSession.ID, &UserSession.Name, &UserSession.LastName, &UserSession.Mobile, &UserSession.Email,
-		&UserSession.Password, &UserSession.Role, &UserSession.Position, &UserSession.LastLogin); err != nil {
-		log.Println("Not Found user")
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Not Found user", "message": err.Error()})
+		&UserSession.Password, &rolesJSON, &UserSession.Position, &UserSession.LastLogin); err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "Unauthorized",
+			"error":   "Not Found user",
+			"message": err.Error()})
 	}
 
 	if err := bcrypt.ComparePasswords(UserSession.Password, signinData.Password); err != nil {
 		log.Println("Incorrect Password")
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Incorrect Password", "message": err.Error()})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "Unauthorized",
+			"error":   "Incorrect Password",
+			"message": err.Error()})
+	}
+
+	// แปลง JSON string เป็น slice ของ string
+	if err := json.Unmarshal([]byte(rolesJSON), &UserSession.Roles); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error unmarshalling roles", "data": err.Error()})
 	}
 
 	//NOTE : แจก Token จาก JWT
-	token, err := jwt.GenerateToken(signinData.Email)
+	token, err := jwt.GenerateToken(signinData.Email, UserSession.Roles)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error generating token", "message": err.Error()})
 	}

@@ -1,30 +1,47 @@
 package jwt
 
 import (
-	"log"
-	"os"
+	// "log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 )
 
-var SecretKey []byte
+var SecretKey = []byte("NEED_SECRET_KEY")
 
-func init() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal("Error loading .env file", err)
-	}
-	SecretKey = []byte(os.Getenv("SECRET_KEY"))
+type Claims struct {
+	Email string   `json:"email"`
+	Roles []string `json:"roles"`
+	jwt.RegisteredClaims
 }
-func GenerateToken(username string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": username,
-		"exp":      time.Now().Add(time.Hour * 72).Unix(),
-	})
-	tokenToString, err := token.SignedString(SecretKey)
-	if err != nil {
-		return "", err
+
+func GenerateToken(email string, roles []string) (string, error) {
+	expirationTime := time.Now().Add(time.Hour * 72)
+	claims := &Claims{
+		Email: email,
+		Roles: roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
 	}
-	return tokenToString, nil
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(SecretKey)
+}
+
+func ParseToken(tokenString string) (*Claims, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return SecretKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, err
+	}
+
+	return claims, nil
 }

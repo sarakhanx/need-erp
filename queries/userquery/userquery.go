@@ -27,7 +27,7 @@ const (
 		mobile VARCHAR(255),
 		email VARCHAR(255),
 		password VARCHAR(255),
-		role VARCHAR(255),
+		role JSONB,
 		position VARCHAR(255),
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
