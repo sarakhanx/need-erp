@@ -14,6 +14,7 @@ func ProductRoutes(app *fiber.App) {
 
 	api.Delete("/del-product/:product_id", productcontroller.DeleteProduct)
 
-	api.Get("/products", productcontroller.GetHundredProducts)
 	api.Get("/product/:product_id", productcontroller.GetProductByID)
+	api.Get("/products", productcontroller.GetHundredProducts)
+	api.Get("/product", productcontroller.GetProductByCategory)
 }

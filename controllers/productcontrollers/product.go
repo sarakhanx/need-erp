@@ -154,7 +154,7 @@ func GetHundredProducts(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":     "success",
 		"message":    "Get Products Successfully",
-		"data":       product,
+		"products":   product,
 		"page":       page,
 		"totalPages": TotalPage,
 		"totalRows":  TotalRows,

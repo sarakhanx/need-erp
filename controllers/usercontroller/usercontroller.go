@@ -131,6 +131,12 @@ func SigninUser(c *fiber.Ctx) error {
 	if _, err := conn.Exec(LastLogin, time.Now(), UserSession.ID); err != nil {
 		log.Println("Error updating last login:", err)
 	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(time.Hour * 24),
+		HTTPOnly: true,
+	})
 
 	UserSession.Password = ""
 	return c.JSON(fiber.Map{"token": token, "user": UserSession})

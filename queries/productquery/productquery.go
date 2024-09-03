@@ -34,19 +34,19 @@ const (
 	);
 `
 	//NOTE - ออาจจะ Deprecate ในอนาคต
-	CreateProduct = `INSERT INTO Products (product_name, cost, price, category) VALUES ($1, $2, $3, $4) RETURNING product_id;`
+	CreateProduct = `insert into products (product_name, cost, price, category) VALUES ($1, $2, $3, $4) RETURNING product_id;`
 
-	DeleteProduct = `DELETE FROM Products WHERE product_id = $1;`
+	DeleteProduct = `delete from products where product_id = $1;`
 
-	DeleteProductFromBranch = `DELETE FROM BranchProductQty WHERE product_id = $1;`
+	DeleteProductFromBranch = `delete from branchproductqty where product_id = $1;`
 
-	DeleteProductFromStock = `DELETE FROM ProductStock WHERE product_id = $1;`
+	DeleteProductFromStock = `delete from productstock where product_id = $1;`
 
-	DeleteProductFromLog = `DELETE FROM ProductLog WHERE product_id = $1;`
+	DeleteProductFromLog = `delete from productlog where product_id = $1;`
 	//NOTE - ออาจจะ Deprecate ในอนาคต
-	InsertQtyToBranch = `INSERT INTO BranchProductQty (branch_id, product_id, qty) VALUES ($1, $2, $3);`
+	InsertQtyToBranch = `insert into branchproductqty (branch_id, product_id, qty) VALUES ($1, $2, $3);`
 	//NOTE - ออาจจะ Deprecate ในอนาคต
-	InsertLogToProductLog = `INSERT INTO ProductLog (product_id, action, qty, user_id, branch_id , date) VALUES ($1, $2, $3, $4, $5, Now());`
+	InsertLogToProductLog = `insert into productlog (product_id, action, qty, user_id, branch_id , date) VALUES ($1, $2, $3, $4, $5, Now());`
 	//NOTE - ออาจจะ Deprecate ในอนาคต
 	SumProductStock = `
 	UPDATE ProductStock
@@ -57,7 +57,7 @@ const (
 	)
 	WHERE product_id = $1;`
 
-	GetAllProducts = `SELECT * FROM Products Limit $1 OFFSET $2;`
+	GetAllProducts = `select * from products limit $1 offset $2;`
 
 	GetAProductById = `
 SELECT 
@@ -93,7 +93,19 @@ WHERE
     bqty.product_id = $1;
 	`
 
-	InsertProduct = `CALL insert_or_update_product($1, $2, $3, $4, $5);`
+	InsertProduct = `call insert_or_update_product($1, $2, $3, $4, $5);`
 
-	CreateNewProduct = `CALL create_product($1, $2, $3, $4, $5, $6, $7, $8)`
+	CreateNewProduct = `call create_product($1, $2, $3, $4, $5, $6, $7, $8)`
+
+	GetProductsByCategory = `
+select p.product_name , p.cost , p.price , p.category as CATE , p.product_id
+from products p
+where p.category = $1
+limit $2 offset $3;
+`
+	CountProductsByCategory = `
+select count(p.product_name)
+from products p
+where p.category = $1
+`
 )
