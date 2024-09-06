@@ -1,0 +1,58 @@
+version: '3.8'
+########################################
+#NOTE - psql############################
+########################################
+services:
+  database:
+    image: postgres:16
+    container_name: whalewkss-pg
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: whalewks
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    networks:
+      - need-erp-tunnel
+########################################
+#NOTE - pgAdmin#########################
+########################################
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: sarawut.khan@hotmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 5001
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_LISTEN_PORT}:5001"
+    restart: always
+    networks:
+      - need-erp-tunnel
+  # volumes:
+    # postgres_data:
+    # pgadmin_data:
+########################################
+#NOTE - Go-Backend######################
+########################################
+  backend:
+    image: need-erp-backend:vSandbox
+    container_name: backend-container
+    volumes:
+      - ./pdf-files:/app/pdf-files
+    ports:
+      - "8000:8000"
+    environment:
+      # DB_URI: postgresql://admin:admin@database:5432/whalewkss
+      # SECRET_KEYS: secretkeys
+      PDF_DIR: /app/pdf-files/
+    networks:
+      - need-erp-tunnel
+
+networks:
+  need-erp-tunnel:
+    external: true
